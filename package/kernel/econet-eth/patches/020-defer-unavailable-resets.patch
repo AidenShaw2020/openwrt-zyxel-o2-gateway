@@ -1,0 +1,15 @@
+--- a/econet_eth.c
++++ b/econet_eth.c
+@@ -356,8 +356,12 @@ static int en75_probe(struct platform_de
+ 	eth->regs = regs;
+ 
+ 	eth->reset = devm_reset_control_array_get_exclusive(&pdev->dev);
+-	if (IS_ERR(eth->reset)) {
++	if (IS_ERR(eth->reset)) {
++		err = PTR_ERR(eth->reset);
++		if (err == -EPROBE_DEFER)
++			return dev_err_probe(&pdev->dev, err,
++					     "reset controller not ready\n");
+ 		dev_warn(&pdev->dev, "failed to get resets %pe\n", eth->reset);
+ 	} else {
+ 		err = reset_control_assert(eth->reset);

@@ -1,0 +1,66 @@
+Subject: [PATCH] econet-eth: enable GDM special tag support when DSA is attached
+
+When a GDM port acts as a DSA conduit (netdev_uses_dsa(dev)), enable
+GDM_STAG_EN (bit 0 of stag_en / REG_GDM_INGRESS_CFG) and account for
+the 4-byte MediaTek special tag + VLAN header in the GDM RX oversize
+length threshold.
+
+--- a/econet_port.c
++++ b/econet_port.c
+@@ -148,6 +148,7 @@ static int en75_dev_open(struct net_device *dev)
+ {
+ 	struct en75_gdm_port *port = netdev_priv(dev);
+ 	struct gdm_len_th rlt;
++	u32 stag;
+ 
+ 	netif_tx_start_all_queues(dev);
+ 
+@@ -162,19 +163,18 @@ static int en75_dev_open(struct net_device *dev)
+ 	}
+ #endif
+ 
+-	// TODO DSA
+-	// if (netdev_uses_dsa(dev))
+-	// 	airoha_fe_set(qdma->eth, REG_GDM_INGRESS_CFG(port->id),
+-	// 		      GDM_STAG_EN_MASK);
+-	// else
+-	// 	airoha_fe_clear(qdma->eth, REG_GDM_INGRESS_CFG(port->id),
+-	// 			GDM_STAG_EN_MASK);
+-
+ 	guard(spinlock)(&port->reg_lock);
++	stag = en75_rreg(&port->regs->stag_en);
++	if (netdev_uses_dsa(dev))
++		stag |= BIT(0);
++	else
++		stag &= ~BIT(0);
++	en75_wreg(stag, &port->regs->stag_en);
++
+ 	rlt = en75_rreg(&port->regs->rx_len_threshold);
+ 	set_gdm_len_th_runt_len(&rlt, 60);
+-	set_gdm_len_th_oversize_len(&rlt, ETH_HLEN + dev->mtu + ETH_FCS_LEN);
++	set_gdm_len_th_oversize_len(&rlt, ETH_HLEN + dev->mtu + ETH_FCS_LEN + 8);
+ 	en75_wreg(rlt, &port->regs->rx_len_threshold);
+ 
+ 	return en75_qdma_use(port->qdma);
+ }
+@@ -191,10 +191,18 @@ static int en75_dev_change_mtu(struct net_device *dev, int mtu)
+ {
+ 	struct en75_gdm_port *port = netdev_priv(dev);
+ 	struct gdm_len_th rlt;
++	u32 stag;
+ 
+ 	guard(spinlock)(&port->reg_lock);
++	stag = en75_rreg(&port->regs->stag_en);
++	if (netdev_uses_dsa(dev))
++		stag |= BIT(0);
++	else
++		stag &= ~BIT(0);
++	en75_wreg(stag, &port->regs->stag_en);
++
+ 	rlt = en75_rreg(&port->regs->rx_len_threshold);
+-	set_gdm_len_th_oversize_len(&rlt, ETH_HLEN + mtu + ETH_FCS_LEN);
++	set_gdm_len_th_oversize_len(&rlt, ETH_HLEN + mtu + ETH_FCS_LEN + 8);
+ 	en75_wreg(rlt, &port->regs->rx_len_threshold);
+ 
+ 	WRITE_ONCE(dev->mtu, mtu);
+

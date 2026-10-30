@@ -1,0 +1,33 @@
+Subject: [PATCH] clk: en7523: share SCU MMIO with reset controller
+
+The EN7523 clock setup already owns the second SCU resource. The reset
+provider accesses the same registers, so map that physical range without
+requesting exclusive ownership a second time.
+
+--- a/drivers/clk/clk-en7523.c
++++ b/drivers/clk/clk-en7523.c
+@@ -730,15 +730,21 @@
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct en_rst_data *rst_data;
++	struct resource *res;
+ 	void __iomem *base;
+ 
+ 	/* no reset lines available */
+ 	if (!soc_data->reset.idx_map_nr)
+ 		return 0;
+ 
+-	base = devm_platform_ioremap_resource(pdev, 1);
+-	if (IS_ERR(base))
+-		return PTR_ERR(base);
++	/* Clock setup already owns this SCU resource. */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (!res)
++		return -EINVAL;
++
++	base = devm_ioremap(dev, res->start, resource_size(res));
++	if (!base)
++		return -ENOMEM;
+ 
+ 	rst_data = devm_kzalloc(dev, sizeof(*rst_data), GFP_KERNEL);
+ 	if (!rst_data)

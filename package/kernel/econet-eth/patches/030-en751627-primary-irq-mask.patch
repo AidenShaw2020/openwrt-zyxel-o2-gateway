@@ -1,0 +1,47 @@
+Subject: [PATCH] econet: add EN751627 primary IRQ mask
+
+EN751627 splits QDMA receive notifications over four interrupt banks. The
+current driver only handles the first bank, so restrict that bank to the mask
+used by the OEM LAN QDMA driver instead of enabling the EN751221 map. This is
+an initial single-bank bring-up; the remaining receive banks need dedicated
+handlers before full throughput is supported.
+
+--- a/econet_eth.h
++++ b/econet_eth.h
+@@ -16,6 +16,7 @@ struct en75_debug;
+ 
+ struct en75_soc_data {
+ 	bool dscp_byte_swap;
++	u32 primary_irq_mask;
+ };
+ 
+ /* Number of QDMA engines in this ethernet device. */
+--- a/econet_eth.c
++++ b/econet_eth.c
+@@ -436,0 +437,5 @@
++static const struct en75_soc_data en751627_soc_data = {
++	.dscp_byte_swap = true,
++	.primary_irq_mask = 0x00008083,
++};
++
+@@ -437,5 +442,6 @@ static const struct of_device_id of_en75
+ 	{ .compatible = "econet,en751221-eth", .data = &en751221_soc_data },
+ 	{ .compatible = "econet,en7528-eth", .data = &en7528_soc_data },
++	{ .compatible = "econet,en751627-eth", .data = &en751627_soc_data },
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, of_en75_match);
+--- a/econet_qdma.c
++++ b/econet_qdma.c
+@@ -988,8 +988,11 @@ static int en75_init_final(struct en75_q
+				en |= (p.type == IPS_XPON_INT);
+
+ 				mask |= en << k;
+ 			}
+ 
++			if (i == 0 && j == 0 && qdma->soc->primary_irq_mask)
++				mask = qdma->soc->primary_irq_mask;
++
+ 			qdma->irqs[i].irqmask[j] = mask;
+ 			en75_wreg(mask, qdma->irqs[i].mask_reg[j]);
+ 		}

@@ -1,0 +1,20 @@
+#include "en751627_zyxel_o2-gateway-ram.dts"
+
+/ {
+	model = "Zyxel O2 GateWay (RAM-only AP probe)";
+};
+
+&pcie_phy0 {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+};
+
+&slot0 {
+	wifi@0,0 {
+		compatible = "mediatek,mt7615";
+		reg = <0x0000 0 0 0 0>;
+	};
+};

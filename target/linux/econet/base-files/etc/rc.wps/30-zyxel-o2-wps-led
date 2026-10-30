@@ -1,0 +1,54 @@
+#!/bin/sh
+# Blink the amber WPS LEDs while a push-button session is active, then
+# light the LED of the band that paired for three seconds. The amber LEDs
+# share their housing with the green WLAN LEDs and would hide them.
+# phy0 is the 2.4 GHz radio (amber:wps), phy1 the 5 GHz one (amber:wps5g).
+# Always fail so that the real WPS handlers in /etc/rc.wps still run.
+
+[ "$ACTION" = "released" ] || exit 1
+[ -d /sys/class/leds/amber:wps ] || exit 1
+
+wps_led() {
+	case "$1" in
+	hostapd.phy0-*) echo /sys/class/leds/amber:wps ;;
+	hostapd.phy1-*) echo /sys/class/leds/amber:wps5g ;;
+	esac
+}
+
+wps_any_active() {
+	local obj
+	for obj in $(ubus -S list 'hostapd.*'); do
+		ubus -S call "$obj" wps_status | grep -q '"pbc_status": *"Active"' && return 0
+	done
+	return 1
+}
+
+(
+	for led in /sys/class/leds/amber:wps /sys/class/leds/amber:wps5g; do
+		echo timer > "$led/trigger"
+	done
+	sleep 2
+	n=0
+	while [ $n -lt 130 ] && wps_any_active; do
+		sleep 1
+		n=$((n + 1))
+	done
+	lit=0
+	for obj in $(ubus -S list 'hostapd.*'); do
+		led=$(wps_led "$obj")
+		[ -n "$led" ] || continue
+		echo none > "$led/trigger"
+		if ubus -S call "$obj" wps_status | grep -q '"last_wps_result": *"Success"'; then
+			echo 1 > "$led/brightness"
+			lit=1
+		else
+			echo 0 > "$led/brightness"
+		fi
+	done
+	[ $lit = 1 ] || exit 0
+	sleep 3
+	echo 0 > /sys/class/leds/amber:wps/brightness
+	echo 0 > /sys/class/leds/amber:wps5g/brightness
+) >/dev/null 2>&1 &
+
+exit 1

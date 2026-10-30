@@ -1,0 +1,18 @@
+#!/bin/sh
+
+. /lib/functions/uci-defaults.sh
+
+board_config_update
+
+case "$(board_name)" in
+zyxel,o2-gateway)
+	ucidef_set_led_netdev "lan" "LAN" "green:lan" "br-lan" "link tx rx"
+	ucidef_set_led_netdev "wan" "WAN" "green:wan" "wan" "link tx rx"
+	ucidef_set_led_netdev "wlan2g" "WLAN 2.4G" "green:wlan2g" "phy0-ap0" "link tx rx"
+	ucidef_set_led_netdev "wlan5g" "WLAN 5G" "green:wlan5g" "phy1-ap0" "link tx rx"
+	;;
+esac
+
+board_config_flush
+
+exit 0

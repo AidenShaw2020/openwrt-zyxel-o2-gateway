@@ -1,0 +1,13 @@
+# Device data and build outputs never belong in this repository.
+/release-assets/
+/audit-private/
+*.key
+*.pem
+*.trx
+*.bin
+*.dtb
+*.log
+*known_hosts*
+*private*
+*backup*
+__pycache__/

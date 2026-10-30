@@ -1,0 +1,50 @@
+/dts-v1/;
+
+#include "en751627.dtsi"
+
+/ {
+	model = "Zyxel O2 GateWay (RAM-only bring-up)";
+	compatible = "zyxel,o2-gateway-ram", "econet,en751627";
+
+	aliases {
+		serial0 = &uart;
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x0f000000>;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs = "console=ttyS0,115200n8 loglevel=8";
+	};
+};
+
+&spi_ctrl {
+	status = "disabled";
+};
+
+&nand {
+	status = "disabled";
+};
+
+&gpio0 {
+	status = "disabled";
+};
+
+&gpio1 {
+	status = "disabled";
+};
+
+&pcie_phy0 {
+	status = "disabled";
+};
+
+&pcie_phy1 {
+	status = "disabled";
+};
+
+&usb {
+	status = "disabled";
+};

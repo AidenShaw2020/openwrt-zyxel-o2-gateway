@@ -1,0 +1,20 @@
+#include "en751627_zyxel_o2-gateway-ap-probe.dts"
+#include <dt-bindings/phy/phy.h>
+
+/ {
+	model = "Zyxel O2 GateWay (RAM-only USB probe)";
+
+	usb_phy: phy@1fa80000 {
+		compatible = "econet,en7528-usb-phy", "syscon";
+		reg = <0x1fa80000 0x2000>;
+		#phy-cells = <1>;
+		status = "okay";
+	};
+};
+
+&usb {
+	compatible = "econet,en7528-xhci", "mediatek,mt8173-xhci", "mediatek,mtk-xhci";
+	phys = <&usb_phy PHY_TYPE_USB2>, <&usb_phy PHY_TYPE_USB3>;
+	phy-names = "usb2-phy", "usb3-phy";
+	status = "okay";
+};

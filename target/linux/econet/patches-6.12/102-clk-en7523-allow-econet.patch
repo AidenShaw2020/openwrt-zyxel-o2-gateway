@@ -1,0 +1,16 @@
+Subject: [PATCH] clk: en7523: allow the existing SCU clock provider on EcoNet
+
+The EN751627 PCIe probe uses the EN7523 SCU PCIe clock gate.
+Keep the Linux 6.12 implementation and allow selecting it on ECONET.
+
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -210,7 +210,7 @@
+ config COMMON_CLK_EN7523
+ 	bool "Clock driver for Airoha EN7523 SoC system clocks"
+ 	depends on OF
+-	depends on ARCH_AIROHA || COMPILE_TEST
++	depends on ARCH_AIROHA || ECONET || COMPILE_TEST
+ 	default ARCH_AIROHA
+ 	help
+ 	  This driver provides the fixed clocks and gates present on Airoha

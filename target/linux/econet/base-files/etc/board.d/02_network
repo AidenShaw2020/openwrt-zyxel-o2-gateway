@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/uci-defaults.sh
+. /lib/functions/system.sh
+
+board_config_update
+
+board=$(board_name)
+
+case "$board" in
+zyxel,o2-gateway-ethernet-probe)
+	ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" "wan"
+	;;
+zyxel,o2-gateway)
+	ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" "wan"
+	base_mac=$(mtd_get_mac_binary bootloader 0xff48)
+	ucidef_set_label_macaddr "$base_mac"
+	ucidef_set_interface_macaddr "wan" "$(macaddr_add "$base_mac" 1)"
+	;;
+esac
+
+board_config_flush
+
+exit 0

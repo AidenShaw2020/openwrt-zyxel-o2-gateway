@@ -1,0 +1,29 @@
+#!/bin/sh
+# Internet LED: steady green while wan is up,
+# red when wan has carrier but the interface went down.
+
+case "$(cat /tmp/sysinfo/board_name 2>/dev/null)" in
+zyxel,o2-gateway*) ;;
+*) exit 0 ;;
+esac
+
+[ "$INTERFACE" = "wan" ] || exit 0
+
+green=/sys/class/leds/green:internet
+red=/sys/class/leds/red:internet
+
+case "$ACTION" in
+ifup|ifupdate)
+	echo none > "$red/trigger"
+	echo 0 > "$red/brightness"
+	echo netdev > "$green/trigger"
+	echo "$DEVICE" > "$green/device_name"
+	echo 1 > "$green/link"
+	;;
+ifdown)
+	echo none > "$green/trigger"
+	echo 0 > "$green/brightness"
+	carrier=$(cat "/sys/class/net/$DEVICE/carrier" 2>/dev/null)
+	[ "$carrier" = "1" ] && echo 1 > "$red/brightness" || echo 0 > "$red/brightness"
+	;;
+esac

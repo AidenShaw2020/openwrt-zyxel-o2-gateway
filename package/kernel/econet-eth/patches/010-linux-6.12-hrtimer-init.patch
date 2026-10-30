@@ -1,0 +1,14 @@
+--- a/econet_qdma.c
++++ b/econet_qdma.c
+@@ -780,8 +780,9 @@ static int en75_init_tx_doneq(struct en7
+ {
+ 	dma_addr_t dma_addr;
+ 
+-	hrtimer_setup(&done_q->kick, en75_tx_done_kick,
+-		      CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer_init(&done_q->kick, CLOCK_MONOTONIC,
++		     HRTIMER_MODE_REL);
++	done_q->kick.function = en75_tx_done_kick;
+ 	netif_napi_add_tx(qdma->napi_dev, &done_q->napi,
+ 			  en75_poll_tx_complete);
+ 	done_q->q = dmam_alloc_coherent(qdma->dev, size * sizeof(u32),

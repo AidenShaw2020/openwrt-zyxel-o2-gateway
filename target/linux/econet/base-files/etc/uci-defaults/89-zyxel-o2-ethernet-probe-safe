@@ -1,0 +1,60 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+case "$(board_name)" in
+	zyxel,o2-gateway-ethernet-probe)
+		uci -q delete network.@device[0].ports
+		uci -q set network.@device[0].name='br-lan'
+		uci -q set network.@device[0].type='bridge'
+		uci -q add_list network.@device[0].ports='lan1'
+		uci -q add_list network.@device[0].ports='lan2'
+		uci -q add_list network.@device[0].ports='lan3'
+		uci -q add_list network.@device[0].ports='lan4'
+
+		uci -q set network.lan.device='br-lan'
+		uci -q set network.lan.proto='static'
+		uci -q set network.lan.ipaddr='192.168.1.1'
+		uci -q set network.lan.netmask='255.255.255.0'
+
+		uci -q set network.wan=interface
+		uci -q set network.wan.device='wan'
+		uci -q set network.wan.proto='dhcp'
+
+		uci -q set network.wan6=interface
+		uci -q set network.wan6.device='wan'
+		uci -q set network.wan6.proto='dhcpv6'
+		uci commit network
+
+		uci -q set system.led_lan=led
+		uci -q set system.led_lan.name='LAN'
+		uci -q set system.led_lan.sysfs='green:lan'
+		uci -q set system.led_lan.trigger='netdev'
+		uci -q set system.led_lan.dev='br-lan'
+		uci -q set system.led_lan.mode='link tx rx'
+
+		uci -q set system.led_wan=led
+		uci -q set system.led_wan.name='WAN'
+		uci -q set system.led_wan.sysfs='green:wan'
+		uci -q set system.led_wan.trigger='netdev'
+		uci -q set system.led_wan.dev='wan'
+		uci -q set system.led_wan.mode='link tx rx'
+
+		uci -q set system.led_wlan2g=led
+		uci -q set system.led_wlan2g.name='WLAN 2.4G'
+		uci -q set system.led_wlan2g.sysfs='green:wlan2g'
+		uci -q set system.led_wlan2g.trigger='netdev'
+		uci -q set system.led_wlan2g.dev='phy0-ap0'
+		uci -q set system.led_wlan2g.mode='link tx rx'
+
+		uci -q set system.led_wlan5g=led
+		uci -q set system.led_wlan5g.name='WLAN 5G'
+		uci -q set system.led_wlan5g.sysfs='green:wlan5g'
+		uci -q set system.led_wlan5g.trigger='netdev'
+		uci -q set system.led_wlan5g.dev='phy1-ap0'
+		uci -q set system.led_wlan5g.mode='link tx rx'
+		uci commit system
+		;;
+esac
+
+exit 0

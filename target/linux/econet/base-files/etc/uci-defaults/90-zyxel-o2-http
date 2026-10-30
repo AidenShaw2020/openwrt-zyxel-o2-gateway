@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+case "$(board_name)" in
+	zyxel,o2-gateway-ram|zyxel,o2-gateway-ethernet-probe|zyxel,o2-gateway)
+		uci -q delete uhttpd.main.listen_https
+		uci set uhttpd.main.redirect_https='0'
+		uci commit uhttpd
+		;;
+esac
+
+exit 0

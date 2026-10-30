@@ -1,0 +1,60 @@
+Subject: [PATCH] en75_bmt: accept 250-entry vendor BBT checksum
+
+The Zyxel O2 GateWay (EN751627) bootloader stores a RAWB BBT whose
+checksum covers only the first 250 entries, the remaining space is
+left 0xff. Accept that checksum when reading the table.
+
+--- a/drivers/mtd/nand/en75_bmt.c
++++ b/drivers/mtd/nand/en75_bmt.c
+@@ -122,6 +122,9 @@
+ /* Size field is a u8 but vendor firmware checksums over all 1000 places. */
+ #define MAX_BBT_SIZE				1000
+ 
++/* Older vendor firmware checksums over only 250 places. */
++#define VENDOR_BBT_SIZE_SMALL			250
++
+ /* Vendor firmware calls this POOL_GOOD_BLOCK_PERCENT */
+ #define REQUIRED_GOOD_BLOCKS(total_blocks)	((total_blocks) * 8 / 100)
+ 
+@@ -282,17 +285,22 @@
+  * In-memory functions (do not read or write)
+  */
+ 
+-static u16 bbt_checksum(const struct bbt_table *bbt)
++static u16 bbt_checksum_entries(const struct bbt_table *bbt, int entries)
+ {
+ 	const u8 *data = (u8 *)bbt->table;
+ 	u16 checksum = bbt->header.version + bbt->header.size;
+ 
+-	for (int i = 0; i < MAX_BBT_SIZE * sizeof(bbt->table[0]); i++)
++	for (int i = 0; i < entries * sizeof(bbt->table[0]); i++)
+ 		checksum += data[i];
+ 
+ 	return checksum;
+ }
+ 
++static u16 bbt_checksum(const struct bbt_table *bbt)
++{
++	return bbt_checksum_entries(bbt, MAX_BBT_SIZE);
++}
++
+ static u8 bmt_checksum(const struct bmt_table *bmt, int check_entries)
+ {
+ 	int length;
+@@ -943,7 +951,15 @@
+ 	if (strncmp(workspace.header.signature, "RAWB", 4))
+ 		return -EINVAL;
+ 
+-	if (workspace.header.checksum != bbt_checksum(&workspace))
++	/*
++	 * Some bootloaders (e.g. Zyxel O2 GateWay, EN751627) only checksum
++	 * the first VENDOR_BBT_SIZE_SMALL places and leave the rest 0xff.
++	 * Accept both on read; the BBT is never rewritten unless
++	 * econet,can-write-factory-bbt is set.
++	 */
++	if (workspace.header.checksum != bbt_checksum(&workspace) &&
++	    workspace.header.checksum !=
++		bbt_checksum_entries(&workspace, VENDOR_BBT_SIZE_SMALL))
+ 		return -EINVAL;
+ 
+ 	sort_bbt(&workspace);

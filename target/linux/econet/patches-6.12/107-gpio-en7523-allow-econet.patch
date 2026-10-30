@@ -1,0 +1,16 @@
+Subject: [PATCH] gpio: en7523: allow selecting GPIO_EN7523 on EcoNet
+
+Allow building the Airoha EN7523 GPIO controller driver on MIPS EcoNet
+SoCs (such as EN751627), which share the same two-bank GPIO block at
+0x1fbf0200 / 0x1fbf0270.
+
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -272,7 +272,7 @@ config GPIO_EM
+ config GPIO_EN7523
+ 	tristate "Airoha GPIO support"
+-	depends on ARCH_AIROHA
++	depends on ARCH_AIROHA || ECONET || COMPILE_TEST
+ 	default ARCH_AIROHA
+ 	select GPIO_GENERIC
+ 	select GPIOLIB_IRQCHIP
